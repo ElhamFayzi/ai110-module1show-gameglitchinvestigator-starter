@@ -1,6 +1,7 @@
 import random
 import streamlit as st
 
+# FIX: Core game logic now lives in logic_utils.py; app.py keeps only the UI.
 from logic_utils import (
     get_range_for_difficulty,
     parse_guess,
@@ -56,6 +57,7 @@ if "celebrated" not in st.session_state:
 
 st.subheader("Make a guess")
 
+# FIX : placeholder reserved here, filled after submit so "Attempts left" isn't stale — paired with Claude in agent mode.
 attempts_left_box = st.empty()
 
 with st.expander("Developer Debug Info"):
@@ -79,6 +81,7 @@ with col3:
     show_hint = st.checkbox("Show hint", value=True)
 
 if new_game:
+    # FIX: New Game now fully resets state (status/score/history) so a finished game truly restarts -- I flagged it, Claude implemented it.
     st.session_state.attempts = 0
     st.session_state.secret = random.randint(low, high)
     st.session_state.score = 0
@@ -123,6 +126,7 @@ if submit:
             attempt_number=st.session_state.attempts,
         )
 
+        # FIX: rerun immediately on game end so play stops at once instead of allowing one extra guess — debugged together with Claude.
         if outcome == "Win":
             st.session_state.status = "won"
             st.session_state.end_message = (
@@ -140,6 +144,7 @@ if submit:
                 )
                 st.rerun()
 
+# FIX: banner rendered here, after attempts is updated, so the count reflects the latest guess — Claude wrote it from my bug report.
 attempts_left_box.info(
     f"Guess a number between {low} and {high}. "
     f"Attempts left: {attempt_limit - st.session_state.attempts}"

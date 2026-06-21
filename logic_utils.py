@@ -1,3 +1,4 @@
+# FIX: Refactored the pure game logic out of app.py into this module so it's importable and testable — done with Claude in agent mode.
 def get_range_for_difficulty(difficulty: str):
     """Return (low, high) inclusive range for a given difficulty."""
     if difficulty == "Easy":

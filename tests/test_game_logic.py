@@ -1,94 +1,118 @@
 from logic_utils import check_guess
 
+
+# check_guess was refactored into logic_utils.py and now returns a
+# (outcome, message) tuple, so we unpack the outcome here.
 def test_winning_guess():
     # If the secret is 50 and guess is 50, it should be a win
-    result = check_guess(50, 50)
-    assert result == "Win"
+    outcome, _message = check_guess(50, 50)
+    assert outcome == "Win"
+
 
 def test_guess_too_high():
     # If secret is 50 and guess is 60, hint should be "Too High"
-    result = check_guess(60, 50)
-    assert result == "Too High"
+    outcome, _message = check_guess(60, 50)
+    assert outcome == "Too High"
+
 
 def test_guess_too_low():
     # If secret is 50 and guess is 40, hint should be "Too Low"
-    result = check_guess(40, 50)
-    assert result == "Too Low"
+    outcome, _message = check_guess(40, 50)
+    assert outcome == "Too Low"
 
 
 # ---------------------------------------------------------------------------
-# Regression tests for the two bugs fixed in app.py's submit flow.
+# Regression tests for the two bugs fixed in app.py's game flow.
 #
-# That logic lives inline inside the Streamlit script and can't be imported
-# without executing the UI, so play_round() below mirrors the *corrected*
-# submit flow. These tests pin down the contract the fixes established:
-#   Bug 1 - "Attempts left" was rendered before the counter was incremented,
-#           so it lagged one guess behind (looked like the guess didn't count).
-#   Bug 2 - the game-over screen only halted play on the *next* interaction,
-#           so one extra guess was accepted after attempts left hit 0.
+# Both bugs lived in app.py's Streamlit orchestration rather than in a single
+# logic_utils function, so we model the *fixed* per-guess rules here and drive
+# them with the refactored logic_utils.check_guess. The simulation mirrors the
+# corrected app.py: count the attempt first, then derive attempts-left and the
+# game-over decision from that updated count.
 # ---------------------------------------------------------------------------
 
-def play_round(attempt_limit, num_wrong_guesses):
-    """Replay app.py's fixed submit flow for a run of wrong guesses.
+def simulate_game(secret, guesses, attempt_limit):
+    """Replay a sequence of guesses using the fixed game rules.
 
-    Returns (displayed_attempts_left, status, guesses_processed) where
-    displayed_attempts_left is the value shown to the player after each
-    processed guess.
+    Returns a dict capturing the final state plus the attempts-left value
+    recorded immediately after each processed guess.
     """
     attempts = 0
     status = "playing"
-    displayed_attempts_left = []
-    guesses_processed = 0
+    remaining_after_each = []
 
-    for _ in range(num_wrong_guesses):
-        # Once the game is over the input is gone, so further submits are
-        # ignored rather than counted (Bug 2 fix).
+    for guess in guesses:
+        # Once the game is over no further guess may be processed.
         if status != "playing":
             break
 
-        attempts += 1
-        guesses_processed += 1
+        outcome, _message = check_guess(guess, secret)
+        attempts += 1  # the guess is counted before we read any counter
 
-        # The out-of-attempts check fires on this same guess (Bug 2 fix).
-        if attempts >= attempt_limit:
+        remaining = attempt_limit - attempts
+        remaining_after_each.append(remaining)
+
+        if outcome == "Win":
+            status = "won"
+        elif attempts >= attempt_limit:  # game over the moment 0 remain
             status = "lost"
 
-        # "Attempts left" is read after the counter is updated (Bug 1 fix).
-        displayed_attempts_left.append(attempt_limit - attempts)
-
-    return displayed_attempts_left, status, guesses_processed
-
-
-def test_attempts_left_updates_on_first_guess():
-    # Bug 1: after the very first guess with an 8-attempt limit, the player
-    # must see 7 left -- not a stale 8.
-    displayed, _, _ = play_round(attempt_limit=8, num_wrong_guesses=1)
-    assert displayed[0] == 7
+    return {
+        "attempts": attempts,
+        "status": status,
+        "remaining_after_each": remaining_after_each,
+    }
 
 
-def test_attempts_left_never_lags_behind():
-    # Bug 1: the displayed count decreases by exactly one per guess.
-    displayed, _, _ = play_round(attempt_limit=8, num_wrong_guesses=4)
-    assert displayed == [7, 6, 5, 4]
+def test_first_wrong_guess_decrements_attempts_left():
+    # FIX: the very first wrong guess used to leave "Attempts left"
+    # unchanged, as if it never registered. After the fix the first counted
+    # guess must immediately drop the remaining count by one.
+    result = simulate_game(secret=50, guesses=[10], attempt_limit=8)
+
+    assert result["attempts"] == 1
+    # Was 8 (stale) before the fix; must now be 7.
+    assert result["remaining_after_each"][0] == 7
 
 
-def test_game_not_over_while_one_attempt_remains():
-    # Bug 2: with one attempt left the game is still playable.
-    displayed, status, _ = play_round(attempt_limit=5, num_wrong_guesses=4)
-    assert status == "playing"
-    assert displayed[-1] == 1
+def test_attempts_left_is_never_stale():
+    # FIX, generalized: after N counted guesses, attempts-left must equal
+    # limit - N for every guess, never lagging a step behind.
+    limit = 5
+    wrong_guesses = [1, 2, 3]  # all below the secret, none win
+    result = simulate_game(secret=50, guesses=wrong_guesses, attempt_limit=limit)
+
+    assert result["remaining_after_each"] == [4, 3, 2]
 
 
-def test_game_over_exactly_when_attempts_reach_zero():
-    # Bug 2: the game ends on the guess that brings attempts left to 0.
-    displayed, status, _ = play_round(attempt_limit=5, num_wrong_guesses=5)
-    assert status == "lost"
-    assert displayed[-1] == 0
+def test_game_ends_exactly_when_attempts_reach_zero():
+    # FIX: the game must be over the instant attempts-left hits 0, i.e.
+    # after exactly `attempt_limit` wrong guesses -- not one attempt later.
+    limit = 5
+    wrong_guesses = [1, 2, 3, 4, 6]  # 5 wrong guesses, none equal the secret
+    result = simulate_game(secret=50, guesses=wrong_guesses, attempt_limit=limit)
+
+    assert result["attempts"] == limit
+    assert result["remaining_after_each"][-1] == 0
+    assert result["status"] == "lost"
 
 
 def test_no_extra_attempt_after_game_over():
-    # Bug 2: even if the player tries more guesses, only `attempt_limit`
-    # guesses are ever processed -- no free extra attempt past 0.
-    _, status, guesses_processed = play_round(attempt_limit=5, num_wrong_guesses=10)
-    assert status == "lost"
-    assert guesses_processed == 5
+    # FIX, the symptom: an extra guess offered past 0 remaining must be
+    # ignored. Feeding limit + 1 guesses must still stop at exactly `limit`.
+    limit = 5
+    six_guesses = [1, 2, 3, 4, 6, 7]
+    result = simulate_game(secret=50, guesses=six_guesses, attempt_limit=limit)
+
+    assert result["attempts"] == limit  # the 6th guess never gets counted
+    assert result["status"] == "lost"
+
+
+def test_game_still_playing_with_one_attempt_left():
+    # Boundary: with one attempt remaining the game must NOT be over yet.
+    limit = 5
+    four_guesses = [1, 2, 3, 4]
+    result = simulate_game(secret=50, guesses=four_guesses, attempt_limit=limit)
+
+    assert result["status"] == "playing"
+    assert result["remaining_after_each"][-1] == 1

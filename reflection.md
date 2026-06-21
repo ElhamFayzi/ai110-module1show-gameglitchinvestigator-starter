@@ -38,13 +38,16 @@ One misleading suggestion involved the fix for the attempts counter bug. Claude 
 I decided a bug was fixed by re-running the program and testing the same scenarios that originally caused the issue. If the program consistently produced the expected behavior without introducing new errors, I considered the bug resolved.
 - Describe at least one test you ran (manual or using pytest)  
   and what it showed you about your code.
+I ran the pytest suite with python -m pytest tests/test_game_logic.py -v, and all 8 tests passed. The most useful one was test_first_wrong_guess_decrements_attempts_left, which simulates a single wrong guess and asserts that "attempts left" drops from 8 to 7 right away. This directly targeted the counter bug I'd logged earlier, where the first wrong guess didn't register. I also ran test_guess_too_low and test_guess_too_high, which verified the hint direction was no longer reversed (guessing 40 against a secret of 50 correctly returns "Too Low").
 - Did AI help you design or understand any tests? How?
-
+Yes—Claude helped me design the regression tests by suggesting I extract the pure game logic into check_guess so it could be tested in isolation
 ---
 
 ## 4. What did you learn about Streamlit and state?
 
 - How would you explain Streamlit "reruns" and session state to a friend who has never used Streamlit?
+Every time you interact with a Streamlit app—like clicking a button or typing a guess—Streamlit re-runs the entire script from top to bottom, so any normal variable resets to its starting value.
+Session state is a special storage box that survives those reruns, which is how the game remembers things like the secret number, score, and attempts left between clicks.
 
 ---
 
@@ -52,5 +55,8 @@ I decided a bug was fixed by re-running the program and testing the same scenari
 
 - What is one habit or strategy from this project that you want to reuse in future labs or projects?
   - This could be a testing habit, a prompting strategy, or a way you used Git.
+  One strategy I want to reuse is asking AI to explain why its suggested fix works before applying it, since that helped me catch a case where Claude's fix introduced a new bug
 - What is one thing you would do differently next time you work with AI on a coding task?
+Next time I would test each AI-suggested fix in isolation before moving on, instead of applying several changes at once.
 - In one or two sentences, describe how this project changed the way you think about AI generated code.
+This project taught me that AI-generated code can look correct and still be wrong, so I now treat every suggestion as a draft to verify and test instead of an answer.
