@@ -5,9 +5,9 @@ def get_range_for_difficulty(difficulty: str):
     if difficulty == "Easy":
         return 1, 20
     if difficulty == "Normal":
-        return 1, 100
-    if difficulty == "Hard":
         return 1, 50
+    if difficulty == "Hard":
+        return 1, 100
     return 1, 100
 
 
@@ -30,21 +30,15 @@ def parse_guess(raw: str):
 
 
 def check_guess(guess, secret):
+    guess = int(guess)
+    secret = int(secret)
+
     if guess == secret:
         return "Win", "🎉 Correct!"
 
-    try:
-        if guess > secret:
-            return "Too High", "📈 Go HIGHER!"
-        else:
-            return "Too Low", "📉 Go LOWER!"
-    except TypeError:
-        g = str(guess)
-        if g == secret:
-            return "Win", "🎉 Correct!"
-        if g > secret:
-            return "Too High", "📈 Go HIGHER!"
-        return "Too Low", "📉 Go LOWER!"
+    if guess > secret:
+        return "Too High", "📉 Go LOWER!"
+    return "Too Low", "📈 Go HIGHER!"
 
 
 def update_score(current_score: int, outcome: str, attempt_number: int):
@@ -93,7 +87,7 @@ if "secret" not in st.session_state:
     st.session_state.secret = random.randint(low, high)
 
 if "attempts" not in st.session_state:
-    st.session_state.attempts = 1
+    st.session_state.attempts = 0
 
 if "score" not in st.session_state:
     st.session_state.score = 0
@@ -104,12 +98,15 @@ if "status" not in st.session_state:
 if "history" not in st.session_state:
     st.session_state.history = []
 
+if "end_message" not in st.session_state:
+    st.session_state.end_message = ""
+
+if "celebrated" not in st.session_state:
+    st.session_state.celebrated = False
+
 st.subheader("Make a guess")
 
-st.info(
-    f"Guess a number between 1 and 100. "
-    f"Attempts left: {attempt_limit - st.session_state.attempts}"
-)
+attempts_left_box = st.empty()
 
 with st.expander("Developer Debug Info"):
     st.write("Secret:", st.session_state.secret)
@@ -133,32 +130,37 @@ with col3:
 
 if new_game:
     st.session_state.attempts = 0
-    st.session_state.secret = random.randint(1, 100)
+    st.session_state.secret = random.randint(low, high)
+    st.session_state.score = 0
+    st.session_state.status = "playing"
+    st.session_state.history = []
+    st.session_state.end_message = ""
+    st.session_state.celebrated = False
     st.success("New game started.")
     st.rerun()
 
 if st.session_state.status != "playing":
     if st.session_state.status == "won":
-        st.success("You already won. Start a new game to play again.")
+        if not st.session_state.celebrated:
+            st.balloons()
+            st.session_state.celebrated = True
+        st.success(st.session_state.end_message)
     else:
-        st.error("Game over. Start a new game to try again.")
+        st.error(st.session_state.end_message)
+    st.caption("Start a new game to play again.")
     st.stop()
 
 if submit:
-    st.session_state.attempts += 1
-
     ok, guess_int, err = parse_guess(raw_guess)
 
     if not ok:
         st.session_state.history.append(raw_guess)
         st.error(err)
     else:
+        st.session_state.attempts += 1
         st.session_state.history.append(guess_int)
 
-        if st.session_state.attempts % 2 == 0:
-            secret = str(st.session_state.secret)
-        else:
-            secret = st.session_state.secret
+        secret = st.session_state.secret
 
         outcome, message = check_guess(guess_int, secret)
 
@@ -172,20 +174,26 @@ if submit:
         )
 
         if outcome == "Win":
-            st.balloons()
             st.session_state.status = "won"
-            st.success(
+            st.session_state.end_message = (
                 f"You won! The secret was {st.session_state.secret}. "
                 f"Final score: {st.session_state.score}"
             )
+            st.rerun()
         else:
             if st.session_state.attempts >= attempt_limit:
                 st.session_state.status = "lost"
-                st.error(
+                st.session_state.end_message = (
                     f"Out of attempts! "
                     f"The secret was {st.session_state.secret}. "
                     f"Score: {st.session_state.score}"
                 )
+                st.rerun()
+
+attempts_left_box.info(
+    f"Guess a number between {low} and {high}. "
+    f"Attempts left: {attempt_limit - st.session_state.attempts}"
+)
 
 st.divider()
 st.caption("Built by an AI that claims this code is production-ready.")

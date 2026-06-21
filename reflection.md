@@ -5,8 +5,10 @@ Answer each question in 3 to 5 sentences. Be specific and honest about what actu
 ## 1. What was broken when you started?
 
 - What did the game look like the first time you ran it?
+When I first ran the game, the GUI displayed a number guessing interface with an input field for guesses, a message area for hints, and buttons such as “Submit Guess” and “New Game”, and a checkbox "Show hint". The game appeared functional at first glance, but several bugs became apparent during use.
 - List at least two concrete bugs you noticed at the start  
   (for example: "the hints were backwards").
+  First, the hint system was incorrect—for example, when I guessed a number lower than the secret number, the game sometimes responded with “go lower” instead of “go higher.” Second, after winning and clicking the “New Game” button, the game generated a new secret number but did not properly reset the game state, which prevented further guesses and continued to display the message “You already won. Start a new game to play again.”
 
 **Bug Reproduction Log**
 
@@ -14,9 +16,9 @@ Document at least 3 bugs you found. Add rows as needed.
 
 | Input | Expected Behavior | Actual Behavior | Console Output / Error |
 |-------|-------------------|-----------------|------------------------|
-| | | | |
-| | | | |
-| | | | |
+| 23 | Should display "go higher" | Displays "go lower" | "go lower" |
+| Click "New Game" after winning, then enter a new guess | Game should reset, accept new guesses, and respond based on new secret number  | Game starts a new game, but does not accept guesses and remains in win state | "You already won. Start a new game to play again." |
+| An incorrect first guess (e.g., guess 10 when secret is 24) | Attempts remaining should decrease by 1 after the guess (7 - 1 = 6 attempts left) | Attempts do not decrease after an incorrect first guess | Attempts left: 7 |
 
 ---
 
