@@ -33,15 +33,15 @@ It wrote the code, ran away, and now the game is unplayable.
 
 Describe your fixed game in numbered steps so a reader can follow along without watching a video:
 
-1. Open the app — you see the title and a sidebar with Difficulty settings.
+1. Open the app. You see the title and a sidebar with Difficulty settings.
 2. Pick a difficulty. This sets the number range and attempt limit.
-3. A banner shows the range and your current Attempts left (now always accurate).
+3. A banner shows the range and your current Attempts left.
 4. Type a guess and click Submit Guess.
 5. Invalid input shows an error and doesn't cost an attempt.
 6. A valid guess is counted first, then checked.
-7. A hint tells you Too High or Too Low (now in the correct direction).
-8. Guess correctly and you win instantly — balloons, final score, game stops.
-9. Run out of attempts and the game ends right at zero — no extra guess.
+7. A hint tells you Too High or Too Low.
+8. Guess correctly and you win instantly, and the program display balloons and final score. Game stops.
+9. Run out of attempts and the game ends right at zero.
 10. Once over, further guesses are ignored.
 11. Click New Game to fully reset and start fresh.
 12. Expand Developer Debug Info anytime to see the secret and state.
