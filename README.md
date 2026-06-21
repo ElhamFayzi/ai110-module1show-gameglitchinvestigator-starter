@@ -26,12 +26,17 @@ It wrote the code, ran away, and now the game is unplayable.
 ## 📝 Document Your Experience
 
 - [ ] Describe the game's purpose.
+
 It's a number guessing game built with Streamlit. The player tries to guess a secret number within a limited number of attempts, using a GUI with an input field, a message area for hints ("go higher"/"go lower"), and "Submit Guess" / "New Game" buttons, plus a "Show hint" checkbox.
+
 - [ ] Detail which bugs you found.
+
 Reversed hints: guessing a number lower than the secret returned "go lower" instead of "go higher," because input was compared as a string rather than an integer.
 Broken reset: clicking "New Game" after winning generated a new secret number but didn't reset the game state, so it stayed stuck on "You already won. Start a new game to play again."
 Attempts counter: an incorrect first guess didn't decrement the attempts remaining.
+
 - [ ] Explain what fixes you applied.
+
 Fixed the hint logic by converting the guess to an integer so comparisons were numeric, restoring correct "Too Low"/"Too High" direction.
 Properly reset the session state on "New Game" so the win flag cleared and new guesses were accepted.
 Corrected the attempts counter so it decrements immediately on a wrong guess (verified by test_first_wrong_guess_decrements_attempts_left, watching it drop from 8 to 7). I also extracted the core logic into check_guess so it could be tested in isolation, and confirmed all 8 pytest tests passed.
