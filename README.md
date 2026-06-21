@@ -51,9 +51,19 @@ Describe your fixed game in numbered steps so a reader can follow along without 
 ## 🧪 Test Results
 
 ```
-# Paste your pytest output here, e.g.:
-# pytest tests/
-# ========================= X passed in 0.XXs =========================
+plugins: anyio-4.14.0
+collected 8 items                                                                                                                                                
+
+tests/test_game_logic.py::test_winning_guess PASSED                                                                                                        [ 12%]
+tests/test_game_logic.py::test_guess_too_high PASSED                                                                                                       [ 25%]
+tests/test_game_logic.py::test_guess_too_low PASSED                                                                                                        [ 37%]
+tests/test_game_logic.py::test_first_wrong_guess_decrements_attempts_left PASSED                                                                           [ 50%]
+tests/test_game_logic.py::test_attempts_left_is_never_stale PASSED                                                                                         [ 62%]
+tests/test_game_logic.py::test_game_ends_exactly_when_attempts_reach_zero PASSED                                                                           [ 75%]
+tests/test_game_logic.py::test_no_extra_attempt_after_game_over PASSED                                                                                     [ 87%]
+tests/test_game_logic.py::test_game_still_playing_with_one_attempt_left PASSED                                                                             [100%]
+
+======================================================================= 8 passed in 0.02s ========================================================================
 ```
 
 ## 🚀 Stretch Features
